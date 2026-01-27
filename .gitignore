@@ -1,0 +1,6 @@
+node_modules/
+daemon/
+logs/
+.env
+*.log
+fme_scripts/

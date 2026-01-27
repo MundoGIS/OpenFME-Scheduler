@@ -1,0 +1,98 @@
+/* General Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+}
+
+/* Hero Section (Encabezado Flaco) */
+.hero {
+    background: linear-gradient(135deg, #1d3557, #457b9d) !important;
+    color: #ffffff !important;
+}
+
+.hero-body {
+    padding: 1rem 1.5rem !important; /* Altura reducida */
+}
+
+.hero .title {
+    color: #ffffff !important;
+    font-size: 1.8rem !important;
+    margin-bottom: 0 !important;
+}
+
+.hero .subtitle {
+    color: #ffffff !important;
+    font-size: 1rem !important;
+    margin-top: 0.2rem !important;
+    opacity: 0.9;
+}
+
+/* Logo con efecto Hover */
+/* Logo con tamaño doble y efecto Hover */
+.header-logo {
+    max-height: 160px; /* <--- AQUÍ: El doble de grande */
+    width: auto;
+    display: block;
+    margin-right: 2rem; /* Un poco más de espacio por el nuevo tamaño */
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.2));
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animación más elástica */
+    cursor: pointer;
+    z-index: 10; /* Asegura que se vea sobre otros elementos si es necesario */
+}
+
+.header-logo:hover {
+    transform: scale(1.1); /* Crece un poco más al pasar el mouse */
+    filter: drop-shadow(0px 8px 15px rgba(0,0,0,0.4));
+}
+
+/* Card Styles */
+.card {
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: #ffffff;
+    border: none;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+.card-header {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #eee;
+}
+
+/* Footer */
+footer.footer {
+    background-color: #1d3557 !important;
+    color: #ffffff !important;
+    padding: 2rem 0;
+    margin-top: 4rem;
+}
+
+footer.footer a {
+    color: #a8dadc;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+footer.footer a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .is-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+    .header-logo {
+        margin-right: 0 !important;
+        margin-bottom: 1rem;
+    }
+}

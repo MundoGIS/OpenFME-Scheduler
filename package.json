@@ -1,0 +1,19 @@
+{
+  "name": "OpenFME-Scheduler",
+  "version": "1.0.0",
+  "description": "Scheduler for FME Server jobs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "MundoGIS",
+  "license": "ISC",
+  "dependencies": {
+    "ejs": "^3.1.9",
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "node-cron": "^3.0.2",
+    "node-windows": "^1.0.0-beta.8"
+  }
+}
