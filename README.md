@@ -127,6 +127,35 @@ By following these steps, you can ensure that the OpenFME-Scheduler runs reliabl
 
 ---
 
+### Configuring the .env File
+
+Before installing the OpenFME-Scheduler, you must configure the `.env` file to ensure all paths and settings are correct for your environment.
+
+1. **Open the `.env` File**:
+   - Locate the `.env` file in the root of the project.
+   - Open it in a text editor of your choice.
+
+2. **Update the Paths**:
+   - Ensure the paths to `FME_EXECUTABLE_PATH`, `FME_SCRIPTS_PATH`, and `JOBS_FILE_PATH` are correct for your system. For example:
+     ```env
+     FME_EXECUTABLE_PATH=C:\Program Files\FME\fme.exe
+     FME_SCRIPTS_PATH=C:\OpenFME-Scheduler\fme_scripts
+     JOBS_FILE_PATH=C:\OpenFME-Scheduler\data\jobs.json
+     ```
+
+3. **Save the File**:
+   - After making the changes, save the file.
+
+4. **Proceed with Installation**:
+   - Once the `.env` file is configured, you can proceed to install the service by running:
+     ```bash
+     node service.js
+     ```
+
+By ensuring the `.env` file is properly configured, you can avoid issues related to incorrect paths or missing configurations.
+
+---
+
 ## Usage
 
 - **Add a Job:**

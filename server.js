@@ -29,6 +29,9 @@ const fmeExecutable = process.env.FME_EXECUTABLE_PATH || 'fme.exe';
 const fmeScriptsPath = process.env.FME_SCRIPTS_PATH || path.join(__dirname, 'fme_scripts');
 const jobsFilePath = process.env.JOBS_FILE_PATH || path.join(__dirname, 'data', 'jobs.json');
 
+// Cambiar el log predeterminado al archivo logs/scheduler.log
+const defaultLogPath = path.join(__dirname, 'logs', 'scheduler.log');
+
 // Definición de rutas y el objeto para las tareas activas
 const activeCronJobs = {};
 
@@ -195,6 +198,16 @@ app.post('/api/run-script', (req, res) => {
     res.json({ message: `El script ${scriptName} se está ejecutando.` });
 });
 
+// Asegurarse de que el archivo de log predeterminado se use en el frontend
+app.get('/api/logs', (req, res) => {
+    fs.readFile(defaultLogPath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Unable to read log file.' });
+        }
+        res.json({ log: data });
+    });
+});
+
 // --- Iniciar Servidor y Planificador ---
 app.listen(PORT, () => {
     console.log(`Servidor escuchando en http://localhost:${PORT}`);
@@ -203,6 +216,7 @@ app.listen(PORT, () => {
     // Asegurarse de que los directorios necesarios existen
     if (!fs.existsSync(fmeScriptsPath)) fs.mkdirSync(fmeScriptsPath, { recursive: true });
     if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
+    if (!fs.existsSync(path.join(__dirname, 'logs'))) fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
     
     // Iniciar el planificador después de que el servidor esté listo
     initializeScheduler();

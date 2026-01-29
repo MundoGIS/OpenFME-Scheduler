@@ -9,8 +9,6 @@ Developed by MundoGIS for the OpenFME-Scheduler project.
 For inquiries, contact: abel.gonzalez@mundogis.se
 */
 
-// routes/scheduler.js
-
 const express = require('express');
 const router = express.Router();
 const path = require('path');
