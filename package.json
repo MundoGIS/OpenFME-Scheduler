@@ -10,6 +10,7 @@
   "author": "MundoGIS",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^17.2.3",
     "ejs": "^3.1.9",
     "express": "^4.21.2",
     "multer": "^2.0.2",

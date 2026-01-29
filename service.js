@@ -15,16 +15,12 @@ const Service = require('node-windows').Service;
 const svc = new Service({
   name: 'OpenFME-Scheduler',
   description: 'Scheduler for FME Server jobs',
-  script: 'server.js',
+  script: 'C:\\OpenFME-Scheduler\\server.js', // Ruta completa al script
   nodeOptions: [
     '--harmony', // Si tienes otras opciones, inclúyelas aquí
     '--max-old-space-size=8192' // Agregar el límite de memoria
   ],
-  user: {
-   domain: 'rkraft', // o tu PC si no tienes dominio
-   account: 'abel.gonzalez',
-   password: 'Maylise-2013'
- }
+  logpath: 'C:\\OpenFME-Scheduler\\logs' // Ruta para los logs del servicio
 });
 
 // Define eventos para el servicio

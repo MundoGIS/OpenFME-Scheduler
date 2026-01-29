@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "job_1769686321595",
+    "scriptName": "test.fmw",
+    "runTime": "2026-01-29T12:33",
+    "isRecurrent": false,
+    "cronPattern": "33 12 29 1 *",
+    "status": "scheduled",
+    "recurrence": {
+      "type": "once"
+    },
+    "createdAt": "2026-01-29T11:32:01.595Z"
+  }
+]

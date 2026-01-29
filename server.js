@@ -1,3 +1,5 @@
+require('dotenv').config(); // Cargar variables de entorno desde .env
+
 /*
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -22,9 +24,12 @@ const { logEvent } = require('./utils/logger');
 const app = express();
 const PORT = process.env.PORT || 3100;
 
+// Reemplazar rutas y credenciales con variables de entorno
+const fmeExecutable = process.env.FME_EXECUTABLE_PATH || 'fme.exe';
+const fmeScriptsPath = process.env.FME_SCRIPTS_PATH || path.join(__dirname, 'fme_scripts');
+const jobsFilePath = process.env.JOBS_FILE_PATH || path.join(__dirname, 'data', 'jobs.json');
+
 // Definición de rutas y el objeto para las tareas activas
-const jobsFilePath = path.join(__dirname, 'data', 'jobs.json');
-const fmeScriptsPath = path.join(__dirname, 'fme_scripts');
 const activeCronJobs = {};
 
 // --- Configuración de Multer para la subida de archivos ---
@@ -77,9 +82,6 @@ function getScheduledJobs() {
  * @param {string} scriptName - El nombre del archivo .fmw a ejecutar.
  */
 function runFmeScript(scriptName) {
-    // IMPORTANTE: Asegúrate de que 'fme.exe' esté en tu PATH del sistema,
-    // o proporciona la ruta completa, ej: 'C:\\Program Files\\FME\\fme.exe'
-    const fmeExecutable = 'fme.exe';
     const scriptPath = path.join(fmeScriptsPath, scriptName);
 
     if (!fs.existsSync(scriptPath)) {
@@ -93,12 +95,12 @@ function runFmeScript(scriptName) {
     exec(command, (error, stdout, stderr) => {
         if (error) {
             logEvent(`ERROR ejecutando ${scriptName}: ${error.message}`);
-            // Aquí podrías añadir lógica para notificar el error (ej. enviar un email)
+            logEvent(`Detalles del error: ${JSON.stringify(error)}`);
         } else {
             logEvent(`FME ejecutado correctamente: ${scriptName}`);
-            if (stdout) logEvent(`STDOUT: ${stdout.trim()}`);
-            if (stderr) logEvent(`STDERR: ${stderr.trim()}`);
         }
+        if (stdout) logEvent(`STDOUT: ${stdout.trim()}`);
+        if (stderr) logEvent(`STDERR: ${stderr.trim()}`);
     });
 }
 
