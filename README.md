@@ -1,5 +1,7 @@
 # OpenFME-Scheduler
 
+![OpenFME-Scheduler Logo](public/css/images/OpenFME.png)
+
 OpenFME-Scheduler is an open-source application designed to manage and schedule the execution of FME scripts. It provides a user-friendly interface and robust backend to automate workflows using `.fmw` scripts.
 
 ## Prerequisites
