@@ -14,7 +14,7 @@
             <div class="is-flex is-align-items-center">
                 
                 <div class="mr-5">
-                    <img src="/css/images/MGIS-logo_gris.png" alt="MundoGIS Logo" class="header-logo">
+                    <img src="/css/images/MGIS-logo_azul.png" alt="MundoGIS Logo" class="header-logo">
                 </div>
 
                 <div class="hero-text">
@@ -29,6 +29,14 @@
 
     <section class="section">
         <div class="container">
+            <div class="tabs is-boxed">
+                <ul>
+                    <li class="is-active" data-tab="scheduler-tab"><a>Scheduler</a></li>
+                    <li data-tab="manage-tab"><a>Manage FME Workbench</a></li>
+                </ul>
+            </div>
+
+            <div id="scheduler-tab" class="tab-content is-active">
             <div class="card">
                 <header class="card-header"><p class="card-header-title">Add New FME Job</p></header>
                 <div class="card-content">
@@ -36,21 +44,22 @@
                         <!-- Script Selection (unchanged) -->
                         <div class="field"><label class="label">1. Select an FME Script</label><p class="help mb-2">Choose an existing script or upload a new one from your computer.</p><div class="control"><div class="select is-fullwidth"><select id="scriptName" name="scriptName"><option value="">Loading existing scripts...</option></select></div></div></div>
                         <div class="field"><label class="label">Or Upload a New Script (.fmw)</label><div class="control"><div class="file has-name is-fullwidth"><label class="file-label"><input class="file-input" type="file" name="fmeFile" id="fmeFile" accept=".fmw"><span class="file-cta"><span class="file-icon"><i class="fas fa-upload"></i></span><span class="file-label">Choose a file…</span></span><span class="file-name" id="fileNameDisplay">No file selected.</span></label></div></div></div>
+                        <div class="field"><label class="label">Script Description (optional)</label><div class="control"><input class="input" type="text" id="scriptDescription" name="scriptDescription" placeholder="Describe what this script does"></div></div>
                         <hr>
                         <!-- UPDATED SCHEDULING SECTION -->
                         <label class="label">2. Specify Time and Frequency</label>
                         <div class="columns">
-                            <div class="column is-half">
+                            <div class="column is-half" id="runTimeColumn">
                                 <div class="field">
                                     <label class="label is-small" for="runTime">First Run (Date and Time)</label>
                                     <div class="control"><input class="input" type="datetime-local" id="runTime" name="runTime" required></div>
-                                    <p class="help">Date and time for the first (or only) run.</p>
+                                    <p class="help" id="runTimeHelp">Date and time for the first (or only) run.</p>
                                 </div>
                             </div>
                             <div class="column is-half">
                                 <div class="field">
                                     <label class="label is-small">Frequency</label>
-                                    <div class="control"><div class="select is-fullwidth"><select id="recurrenceType" name="recurrenceType"><option value="once" selected>Once</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div></div>
+                                    <div class="control"><div class="select is-fullwidth"><select id="recurrenceType" name="recurrenceType"><option value="once" selected>Once</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="ondemand">On-demand</option></select></div></div>
                                 </div>
                             </div>
                         </div>
@@ -83,7 +92,7 @@
                     </form>
                 </div>
             </div>
-            <!-- Jobs Table (with updated header) -->
+              <!-- Jobs Table (with updated header) -->
             <div class="table-container">
                  <h3 class="title is-4">Scheduled Jobs</h3>
                  <table class="table is-fullwidth is-striped is-hoverable">
@@ -121,9 +130,75 @@
                 <div class="field is-grouped">
                     <div class="control is-expanded"><div class="select is-fullwidth"><select id="log-file-select"><option>Loading log list...</option></select></div></div>
                     <div class="control"><button class="button is-info" id="refresh-logs-btn"><span class="icon is-small"><i class="fas fa-sync-alt"></i></span><span>Refresh</span></button></div>
+                    <div class="control"><button class="button is-danger" id="clean-logs-btn"><span class="icon is-small"><i class="fas fa-broom"></i></span><span>Clean logs</span></button></div>
                 </div>
                 <div class="box" style="background-color: #2d2d2d; color: #f1f1f1; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; max-height: 400px; overflow-y: auto;">
                     <pre id="log-content">Select a log file to view its content.</pre>
+                </div>
+            </div>
+            </div>
+
+            <div id="manage-tab" class="tab-content" style="display: none;">
+                <div class="table-container">
+                     <h3 class="title is-4">FME Scripts</h3>
+                     <table class="table is-fullwidth is-striped is-hoverable">
+                         <thead>
+                             <tr>
+                                 <th>Script</th>
+                                 <th>Action</th>
+                             </tr>
+                         </thead>
+                         <tbody id="scripts-table-body">
+                             <tr><td colspan="2" class="has-text-centered">Loading scripts...</td></tr>
+                         </tbody>
+                     </table>
+                     <p class="help">You can delete a script only if it is not used by any scheduled job.</p>
+                </div>
+            </div>
+
+            <div class="modal" id="description-modal">
+                <div class="modal-background"></div>
+                <div class="modal-card">
+                    <header class="modal-card-head">
+                        <p class="modal-card-title">Edit Script Description</p>
+                        <button class="delete" aria-label="close" id="description-modal-close"></button>
+                    </header>
+                    <section class="modal-card-body">
+                        <div class="field">
+                            <label class="label">Script</label>
+                            <div class="control">
+                                <input class="input" type="text" id="description-script-name" readonly>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Description</label>
+                            <div class="control">
+                                <textarea class="textarea" id="description-text" rows="4" placeholder="Describe what this script does"></textarea>
+                            </div>
+                        </div>
+                    </section>
+                    <footer class="modal-card-foot">
+                        <button class="button is-info" id="description-save-btn">Save</button>
+                        <button class="button" id="description-cancel-btn">Cancel</button>
+                    </footer>
+                </div>
+            </div>
+
+            <div class="modal" id="app-modal">
+                <div class="modal-background"></div>
+                <div class="modal-card">
+                    <header class="modal-card-head" id="app-modal-head">
+                        <span class="icon" id="app-modal-icon"><i class="fas fa-info-circle"></i></span>
+                        <p class="modal-card-title" id="app-modal-title">Message</p>
+                        <button class="delete" aria-label="close" id="app-modal-close"></button>
+                    </header>
+                    <section class="modal-card-body">
+                        <p id="app-modal-message"></p>
+                    </section>
+                    <footer class="modal-card-foot" id="app-modal-actions">
+                        <button class="button is-info" id="app-modal-ok">OK</button>
+                        <button class="button" id="app-modal-cancel" style="display:none;">Cancel</button>
+                    </footer>
                 </div>
             </div>
         </div>
@@ -135,21 +210,6 @@
         </div>
     </footer>
     <script src="/js/script.js"></script>
-    <script>
-        document.addEventListener('click', function(event) {
-            if (event.target.classList.contains('run-script-btn')) {
-                const scriptName = event.target.dataset.script;
-                fetch('/api/run-script', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ scriptName })
-                })
-                .then(response => response.json())
-                .then(data => alert(data.message))
-                .catch(error => alert('Error executing script: ' + error));
-            }
-        });
-    </script>
 </body>
 </html>
 

@@ -4,6 +4,8 @@
 
 OpenFME-Scheduler is an open-source application designed to manage and schedule the execution of FME scripts. It provides a user-friendly interface and robust backend to automate workflows using `.fmw` scripts.
 
+**Current version:** 1.1.0
+
 ## Prerequisites
 
 - **Node.js** (version 16 or higher recommended)
@@ -15,10 +17,17 @@ OpenFME-Scheduler is an open-source application designed to manage and schedule 
 - **FME Script Management**
   - Upload and manage `.fmw` scripts.
   - Select scripts from an existing list or upload new ones.
+  - Add/edit script descriptions.
+  - Download scripts and delete unused scripts safely.
 
 - **Task Scheduling**
-  - Schedule scripts to run once, daily, weekly, or monthly.
+  - Schedule scripts to run once, daily, weekly, monthly, or **on-demand**.
+  - Hybrid scheduling: first run at a specific date/time, then recurring runs.
   - Uses `node-cron` for reliable task scheduling.
+
+- **Manual Control**
+  - Run scripts immediately from the UI.
+  - Stop running scripts with one click.
 
 - **User Interface**
   - Web-based interface for managing scheduled jobs.
@@ -26,7 +35,7 @@ OpenFME-Scheduler is an open-source application designed to manage and schedule 
 
 - **Logging and Monitoring**
   - Logs all events and errors for easy debugging.
-  - Provides a log viewer in the web interface.
+  - Log viewer with refresh and clean tools.
 
 - **REST API**
   - Exposes endpoints for managing scripts, jobs, and logs.
@@ -190,3 +199,6 @@ This project is licensed under the Mozilla Public License, v. 2.0. See the [LICE
 
 Developed by MundoGIS for the OpenFME-Scheduler project.
 For inquiries, contact: abel.gonzalez@mundogis.se
+Please contact MundoGIS (abel.gonzalez@mundogis.se) if you need any assistance with the installation or if you have suggestions on how to improve our software.
+Best regards,
+Abel Gonzalez

@@ -15,7 +15,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const multer = require('multer');
 
 // Importar la función de logging centralizada
@@ -28,12 +28,55 @@ const PORT = process.env.PORT || 3100;
 const fmeExecutable = process.env.FME_EXECUTABLE_PATH || 'fme.exe';
 const fmeScriptsPath = process.env.FME_SCRIPTS_PATH || path.join(__dirname, 'fme_scripts');
 const jobsFilePath = process.env.JOBS_FILE_PATH || path.join(__dirname, 'data', 'jobs.json');
+const runningFilePath = process.env.RUNNING_FILE_PATH || path.join(__dirname, 'data', 'running.json');
 
 // Cambiar el log predeterminado al archivo logs/scheduler.log
 const defaultLogPath = path.join(__dirname, 'logs', 'scheduler.log');
 
 // Definición de rutas y el objeto para las tareas activas
 const activeCronJobs = {};
+
+// --- Running scripts state ---
+function readRunning() {
+    try {
+        if (!fs.existsSync(runningFilePath)) return {};
+        return JSON.parse(fs.readFileSync(runningFilePath, 'utf8'));
+    } catch (error) {
+        logEvent(`ERROR: No se pudo leer running.json: ${error.message}`);
+        return {};
+    }
+}
+
+function writeRunning(data) {
+    try {
+        fs.writeFileSync(runningFilePath, JSON.stringify(data, null, 2));
+    } catch (error) {
+        logEvent(`ERROR: No se pudo escribir running.json: ${error.message}`);
+    }
+}
+
+function isProcessAlive(pid) {
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function cleanupRunning() {
+    const running = readRunning();
+    let changed = false;
+    Object.keys(running).forEach(scriptName => {
+        const entry = running[scriptName];
+        if (!entry || !entry.pid || !isProcessAlive(entry.pid)) {
+            delete running[scriptName];
+            changed = true;
+        }
+    });
+    if (changed) writeRunning(running);
+    return running;
+}
 
 // --- Configuración de Multer para la subida de archivos ---
 const storage = multer.diskStorage({
@@ -89,22 +132,68 @@ function runFmeScript(scriptName) {
 
     if (!fs.existsSync(scriptPath)) {
         logEvent(`ERROR: Script no encontrado al intentar ejecutar: ${scriptName}`);
-        return;
+        return { ok: false, error: 'Script not found.' };
+    }
+
+    const running = cleanupRunning();
+    if (running[scriptName]) {
+        logEvent(`WARN: Intento de ejecutar script ya en ejecución: ${scriptName}`);
+        return { ok: false, error: 'Script is already running.' };
     }
 
     const command = `"${fmeExecutable}" "${scriptPath}"`;
     logEvent(`Ejecutando FME: ${command}`);
 
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            logEvent(`ERROR ejecutando ${scriptName}: ${error.message}`);
-            logEvent(`Detalles del error: ${JSON.stringify(error)}`);
-        } else {
-            logEvent(`FME ejecutado correctamente: ${scriptName}`);
-        }
-        if (stdout) logEvent(`STDOUT: ${stdout.trim()}`);
-        if (stderr) logEvent(`STDERR: ${stderr.trim()}`);
+    const safeName = path.basename(scriptName).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const scriptLogPath = path.join(__dirname, 'logs', `${safeName}.log`);
+    const scriptLogStream = fs.createWriteStream(scriptLogPath, { flags: 'a' });
+
+    const writeScriptLog = (type, chunk) => {
+        const timestamp = new Date().toISOString();
+        const text = chunk.toString();
+        const lines = text.split(/\r?\n/);
+        lines.forEach(line => {
+            if (line.trim() !== '') {
+                scriptLogStream.write(`[${timestamp}] [${type}] ${line}\n`);
+            }
+        });
+    };
+
+    scriptLogStream.write(`\n[${new Date().toISOString()}] [START] ${scriptName}\n`);
+
+    const child = spawn(fmeExecutable, [scriptPath], { windowsHide: true });
+
+    child.stdout.on('data', (data) => writeScriptLog('STDOUT', data));
+    child.stderr.on('data', (data) => writeScriptLog('STDERR', data));
+
+    child.on('error', (error) => {
+        logEvent(`ERROR ejecutando ${scriptName}: ${error.message}`);
+        writeScriptLog('ERROR', error.message);
     });
+
+    child.on('close', (code, signal) => {
+        scriptLogStream.write(`[${new Date().toISOString()}] [END] code=${code} signal=${signal || 'none'}\n`);
+        scriptLogStream.end();
+
+        if (code === 0) {
+            logEvent(`FME ejecutado correctamente: ${scriptName}`);
+        } else {
+            logEvent(`ERROR ejecutando ${scriptName}: exit code ${code}`);
+        }
+
+        const current = readRunning();
+        if (current[scriptName]) {
+            delete current[scriptName];
+            writeRunning(current);
+        }
+    });
+
+    const pid = child.pid;
+    const updated = readRunning();
+    updated[scriptName] = { pid, startTime: new Date().toISOString() };
+    writeRunning(updated);
+
+    return { ok: true, pid };
 }
 
 /**
@@ -131,7 +220,10 @@ function scheduleJob(job) {
 
     const task = cron.schedule(job.cronPattern, () => {
         logEvent(`Activando trabajo programado: ${job.scriptName} (ID: ${job.id})`);
-        runFmeScript(job.scriptName);
+        const result = runFmeScript(job.scriptName);
+        if (!result || result.ok === false) {
+            logEvent(`WARN: No se pudo iniciar ${job.scriptName} (ID: ${job.id}).`);
+        }
         
         // Si no es recurrente, la tarea se detiene a sí misma después de la primera ejecución
         if (!job.isRecurrent) {
@@ -189,13 +281,45 @@ app.post('/api/run-script', (req, res) => {
     const { scriptName } = req.body;
 
     if (!scriptName) {
-        return res.status(400).json({ error: 'El nombre del script es obligatorio.' });
+        return res.status(400).json({ error: 'Script name is required.' });
     }
 
     logEvent(`Solicitud para ejecutar manualmente el script: ${scriptName}`);
-    runFmeScript(scriptName);
+    const result = runFmeScript(scriptName);
+    if (!result.ok) {
+        return res.status(409).json({ error: result.error || 'Could not run the script.' });
+    }
 
-    res.json({ message: `El script ${scriptName} se está ejecutando.` });
+    res.json({ message: `Script ${scriptName} is running.` });
+});
+
+// Estado de ejecución actual
+app.get('/api/running', (req, res) => {
+    const running = cleanupRunning();
+    res.json(running);
+});
+
+// Detener un script en ejecución
+app.post('/api/stop-script', (req, res) => {
+    const { scriptName } = req.body;
+    if (!scriptName) {
+        return res.status(400).json({ error: 'Script name is required.' });
+    }
+    const running = cleanupRunning();
+    const entry = running[scriptName];
+    if (!entry || !entry.pid) {
+        return res.status(404).json({ error: 'Script is not running.' });
+    }
+    try {
+        process.kill(entry.pid);
+        delete running[scriptName];
+        writeRunning(running);
+        logEvent(`Script detenido: ${scriptName} (PID: ${entry.pid})`);
+        res.json({ message: `Script ${scriptName} was stopped.` });
+    } catch (error) {
+        logEvent(`ERROR al detener script ${scriptName}: ${error.message}`);
+        res.status(500).json({ error: 'Could not stop the script.' });
+    }
 });
 
 // Asegurarse de que el archivo de log predeterminado se use en el frontend
@@ -218,6 +342,8 @@ app.listen(PORT, () => {
     if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
     if (!fs.existsSync(path.join(__dirname, 'logs'))) fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
     
+    cleanupRunning();
+
     // Iniciar el planificador después de que el servidor esté listo
     initializeScheduler();
 });

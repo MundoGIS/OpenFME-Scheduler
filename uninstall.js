@@ -8,22 +8,23 @@ All rights reserved.
 Developed by MundoGIS for the OpenFME-Scheduler project.
 For inquiries, contact: abel.gonzalez@mundogis.se
 */
+const path = require('path');
 const Service = require('node-windows').Service;
 
 // Crea un nuevo objeto de servicio
 const svc = new Service({
- name: 'OpenFME-Scheduler',
-   description: 'Scheduler for FME Server jobs',
-   script: 'server.js',
+  name: 'OpenFME-Scheduler',
+  description: 'Scheduler for FME Server jobs',
+  script: path.join(__dirname, 'server.js'),
   nodeOptions: [
-    '--harmony', // Si tienes otras opciones, inclúyelas aquí
-    '--max-old-space-size=8192' // Agregar el límite de memoria
+    '--harmony',
+    '--max-old-space-size=8192'
   ]
 });
 
 // Define eventos para el servicio
 svc.on('uninstall', function() {
-  console.log('Servicio desinstalado correctamente.');
+  console.log('Service uninstalled successfully.');
 });
 
 // Desinstala el servicio

@@ -1,7 +1,8 @@
 node_modules/
-daemon/
 logs/
 *.log
 fme_scripts/
 temp/
 *.tmp
+installer/
+daemon/
