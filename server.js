@@ -42,7 +42,7 @@ function readRunning() {
         if (!fs.existsSync(runningFilePath)) return {};
         return JSON.parse(fs.readFileSync(runningFilePath, 'utf8'));
     } catch (error) {
-        logEvent(`ERROR: No se pudo leer running.json: ${error.message}`);
+        logEvent(`ERROR: Could not read running.json: ${error.message}`);
         return {};
     }
 }
@@ -51,7 +51,7 @@ function writeRunning(data) {
     try {
         fs.writeFileSync(runningFilePath, JSON.stringify(data, null, 2));
     } catch (error) {
-        logEvent(`ERROR: No se pudo escribir running.json: ${error.message}`);
+        logEvent(`ERROR: Could not write running.json: ${error.message}`);
     }
 }
 
@@ -118,7 +118,7 @@ function getScheduledJobs() {
         const data = fs.readFileSync(jobsFilePath, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        logEvent(`ERROR: No se pudo leer o parsear jobs.json: ${error.message}`);
+        logEvent(`ERROR: Could not read or parse jobs.json: ${error.message}`);
         return [];
     }
 }
@@ -131,18 +131,18 @@ function runFmeScript(scriptName) {
     const scriptPath = path.join(fmeScriptsPath, scriptName);
 
     if (!fs.existsSync(scriptPath)) {
-        logEvent(`ERROR: Script no encontrado al intentar ejecutar: ${scriptName}`);
+        logEvent(`ERROR: Script not found when attempting to run: ${scriptName}`);
         return { ok: false, error: 'Script not found.' };
     }
 
     const running = cleanupRunning();
     if (running[scriptName]) {
-        logEvent(`WARN: Intento de ejecutar script ya en ejecución: ${scriptName}`);
+        logEvent(`WARN: Attempt to run script already running: ${scriptName}`);
         return { ok: false, error: 'Script is already running.' };
     }
 
     const command = `"${fmeExecutable}" "${scriptPath}"`;
-    logEvent(`Ejecutando FME: ${command}`);
+    logEvent(`Executing FME: ${command}`);
 
     const safeName = path.basename(scriptName).replace(/[^a-zA-Z0-9._-]/g, '_');
     const scriptLogPath = path.join(__dirname, 'logs', `${safeName}.log`);
@@ -167,7 +167,7 @@ function runFmeScript(scriptName) {
     child.stderr.on('data', (data) => writeScriptLog('STDERR', data));
 
     child.on('error', (error) => {
-        logEvent(`ERROR ejecutando ${scriptName}: ${error.message}`);
+        logEvent(`ERROR running ${scriptName}: ${error.message}`);
         writeScriptLog('ERROR', error.message);
     });
 
@@ -176,9 +176,9 @@ function runFmeScript(scriptName) {
         scriptLogStream.end();
 
         if (code === 0) {
-            logEvent(`FME ejecutado correctamente: ${scriptName}`);
+            logEvent(`FME executed successfully: ${scriptName}`);
         } else {
-            logEvent(`ERROR ejecutando ${scriptName}: exit code ${code}`);
+            logEvent(`ERROR running ${scriptName}: exit code ${code}`);
         }
 
         const current = readRunning();
@@ -202,12 +202,12 @@ function runFmeScript(scriptName) {
  */
 function scheduleJob(job) {
     if (!job || !job.cronPattern || !job.scriptName) {
-        logEvent(`WARN: Intento de programar un trabajo inválido: ${JSON.stringify(job)}`);
+        logEvent(`WARN: Attempt to schedule invalid job: ${JSON.stringify(job)}`);
         return;
     }
 
     if (!cron.validate(job.cronPattern)) {
-        logEvent(`ERROR: Patrón Cron inválido para el trabajo ${job.id}: "${job.cronPattern}".`);
+        logEvent(`ERROR: Invalid cron pattern for job ${job.id}: "${job.cronPattern}".`);
         return;
     }
 
@@ -216,20 +216,20 @@ function scheduleJob(job) {
         activeCronJobs[job.id].stop();
     }
 
-    logEvent(`Programando trabajo '${job.scriptName}' con ID ${job.id} y patrón: ${job.cronPattern}`);
+    logEvent(`Scheduling job '${job.scriptName}' with ID ${job.id} and pattern: ${job.cronPattern}`);
 
     const task = cron.schedule(job.cronPattern, () => {
-        logEvent(`Activando trabajo programado: ${job.scriptName} (ID: ${job.id})`);
+        logEvent(`Activating scheduled job: ${job.scriptName} (ID: ${job.id})`);
         const result = runFmeScript(job.scriptName);
         if (!result || result.ok === false) {
-            logEvent(`WARN: No se pudo iniciar ${job.scriptName} (ID: ${job.id}).`);
+            logEvent(`WARN: Could not start ${job.scriptName} (ID: ${job.id}).`);
         }
         
         // Si no es recurrente, la tarea se detiene a sí misma después de la primera ejecución
         if (!job.isRecurrent) {
             task.stop();
             delete activeCronJobs[job.id];
-            logEvent(`Tarea única ${job.id} ejecutada y detenida.`);
+            logEvent(`One-time task ${job.id} executed and stopped.`);
         }
     });
 
@@ -240,7 +240,7 @@ function scheduleJob(job) {
  * Carga todos los trabajos desde jobs.json y los programa al iniciar el servidor.
  */
 function initializeScheduler() {
-    logEvent("--- Inicializando Planificador de Tareas ---");
+    logEvent("--- Initializing Scheduler ---");
     const jobs = getScheduledJobs();
     const now = new Date();
     
@@ -250,10 +250,10 @@ function initializeScheduler() {
         if (job.isRecurrent || runTime > now) {
             scheduleJob(job);
         } else {
-            logEvent(`INFO: El trabajo único ${job.id} (${job.scriptName}) ya ha pasado. No se reprogramará.`);
+            logEvent(`INFO: One-time job ${job.id} (${job.scriptName}) has already passed. It will not be rescheduled.`);
         }
     });
-    logEvent(`Inicialización completada. ${Object.keys(activeCronJobs).length} trabajos activos.`);
+    logEvent(`Initialization complete. ${Object.keys(activeCronJobs).length} active jobs.`);
 }
 
 
@@ -284,7 +284,7 @@ app.post('/api/run-script', (req, res) => {
         return res.status(400).json({ error: 'Script name is required.' });
     }
 
-    logEvent(`Solicitud para ejecutar manualmente el script: ${scriptName}`);
+    logEvent(`Request to run script manually: ${scriptName}`);
     const result = runFmeScript(scriptName);
     if (!result.ok) {
         return res.status(409).json({ error: result.error || 'Could not run the script.' });
@@ -314,10 +314,10 @@ app.post('/api/stop-script', (req, res) => {
         process.kill(entry.pid);
         delete running[scriptName];
         writeRunning(running);
-        logEvent(`Script detenido: ${scriptName} (PID: ${entry.pid})`);
+        logEvent(`Script stopped: ${scriptName} (PID: ${entry.pid})`);
         res.json({ message: `Script ${scriptName} was stopped.` });
     } catch (error) {
-        logEvent(`ERROR al detener script ${scriptName}: ${error.message}`);
+        logEvent(`ERROR stopping script ${scriptName}: ${error.message}`);
         res.status(500).json({ error: 'Could not stop the script.' });
     }
 });
@@ -335,7 +335,7 @@ app.get('/api/logs', (req, res) => {
 // --- Iniciar Servidor y Planificador ---
 app.listen(PORT, () => {
     console.log(`Servidor escuchando en http://localhost:${PORT}`);
-    logEvent("--- Servidor Iniciado ---");
+    logEvent("--- Server Started ---");
     
     // Asegurarse de que los directorios necesarios existen
     if (!fs.existsSync(fmeScriptsPath)) fs.mkdirSync(fmeScriptsPath, { recursive: true });

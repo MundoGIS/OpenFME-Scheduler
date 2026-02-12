@@ -27,7 +27,7 @@ function readScriptsMeta() {
         if (!fs.existsSync(scriptsMetaPath)) return {};
         return JSON.parse(fs.readFileSync(scriptsMetaPath, 'utf8'));
     } catch (error) {
-        logEvent(`FEL vid läsning av scripts.json: ${error.message}`);
+        logEvent(`ERROR reading scripts.json: ${error.message}`);
         return {};
     }
 }
@@ -36,7 +36,7 @@ function writeScriptsMeta(meta) {
     try {
         fs.writeFileSync(scriptsMetaPath, JSON.stringify(meta, null, 2));
     } catch (error) {
-        logEvent(`FEL vid skrivning av scripts.json: ${error.message}`);
+        logEvent(`ERROR writing scripts.json: ${error.message}`);
     }
 }
 
@@ -80,7 +80,7 @@ module.exports = function (upload, activeCronJobs, scheduleJob, runFmeScript) {
         const meta = readScriptsMeta();
         meta[sanitizedName] = { description: (description || '').trim() };
         writeScriptsMeta(meta);
-        logEvent(`Beskrivning uppdaterad för skript: ${sanitizedName}`);
+        logEvent(`Script description updated: ${sanitizedName}`);
         res.json({ message: 'Description updated.' });
     });
 
@@ -132,10 +132,10 @@ module.exports = function (upload, activeCronJobs, scheduleJob, runFmeScript) {
                 delete meta[sanitizedName];
                 writeScriptsMeta(meta);
             }
-            logEvent(`FME-skript borttaget: ${sanitizedName}`);
+            logEvent(`FME script removed: ${sanitizedName}`);
             res.json({ message: 'Script deleted.' });
         } catch (error) {
-            logEvent(`FEL vid borttagning av skript: ${error.message}`);
+            logEvent(`ERROR removing script: ${error.message}`);
             res.status(500).json({ error: 'Could not delete script.' });
         }
     });
@@ -243,7 +243,7 @@ module.exports = function (upload, activeCronJobs, scheduleJob, runFmeScript) {
             }
             jobs.push(newJob);
             fs.writeFileSync(jobsFilePath, JSON.stringify(jobs, null, 2));
-            logEvent(`Jobb ${newJob.id} sparades i jobs.json.`);
+            logEvent(`Job ${newJob.id} saved to jobs.json.`);
 
             // --- LÓGICA DE PROGRAMACIÓN HÍBRIDA ---
             const now = new Date();
@@ -252,15 +252,15 @@ module.exports = function (upload, activeCronJobs, scheduleJob, runFmeScript) {
             // Programar siempre la primera ejecución si es en el futuro
             if (firstRunDelay !== null && firstRunDelay > 0) {
                 setTimeout(() => {
-                    logEvent(`Aktiverar FÖRSTA KÖRNING (unik) för: ${newJob.scriptName} (ID: ${newJob.id})`);
+                    logEvent(`Activating FIRST RUN (one-time) for: ${newJob.scriptName} (ID: ${newJob.id})`);
                     const result = runFmeScript(newJob.scriptName);
                     if (!result || result.ok === false) {
-                        logEvent(`WARN: No se pudo iniciar ${newJob.scriptName} en primera ejecución.`);
+                        logEvent(`WARN: Could not start ${newJob.scriptName} on first run.`);
                     }
                 }, firstRunDelay);
-                logEvent(`Första körningen för ${newJob.id} är schemalagd om ${firstRunDelay} ms.`);
+                logEvent(`First run for ${newJob.id} scheduled in ${firstRunDelay} ms.`);
             } else if (firstRunDelay !== null) {
-                logEvent(`WARN: La fecha de inicio para ${newJob.id} ya ha pasado. La primera ejecución se omitirá.`);
+                logEvent(`WARN: Start date for ${newJob.id} has already passed. First run will be skipped.`);
             }
 
             // Si el trabajo es recurrente, programar el patrón cron para las repeticiones futuras
@@ -271,8 +271,8 @@ module.exports = function (upload, activeCronJobs, scheduleJob, runFmeScript) {
             res.status(201).json({ message: 'Job has been scheduled and activated.', job: newJob });
 
         } catch (error) {
-            logEvent(`FEL vid sparning av jobb: ${error.message}`);
-            console.error('Fel vid sparning av jobb:', error);
+            logEvent(`ERROR saving job: ${error.message}`);
+            console.error('Error saving job:', error);
             res.status(500).json({ error: 'Could not save the job.' });
         }
     });
@@ -280,7 +280,7 @@ module.exports = function (upload, activeCronJobs, scheduleJob, runFmeScript) {
     // --- DELETE /jobs/:id ---
     router.delete('/jobs/:id', (req, res) => {
         const jobIdToDelete = req.params.id;
-        logEvent(`Begäran om att ta bort jobb med ID: ${jobIdToDelete}`);
+        logEvent(`Request to delete job with ID: ${jobIdToDelete}`);
         if (!jobIdToDelete) {
             return res.status(400).json({ error: 'Job ID is required.' });
         }
@@ -298,12 +298,12 @@ module.exports = function (upload, activeCronJobs, scheduleJob, runFmeScript) {
             if (activeCronJobs && activeCronJobs[jobIdToDelete]) {
                 activeCronJobs[jobIdToDelete].stop();
                 delete activeCronJobs[jobIdToDelete];
-                logEvent(`Aktiv cron-uppgift ${jobIdToDelete} stoppad och borttagen.`);
+                logEvent(`Active cron job ${jobIdToDelete} stopped and removed.`);
             }
-            logEvent(`Jobb ${jobIdToDelete} borttaget.`);
+            logEvent(`Job ${jobIdToDelete} deleted.`);
             res.json({ message: 'Job deleted.' });
         } catch (error) {
-            logEvent(`FEL vid borttagning av jobb: ${error.message}`);
+            logEvent(`ERROR deleting job: ${error.message}`);
             res.status(500).json({ error: 'Could not delete the job.' });
         }
     });
@@ -350,7 +350,7 @@ module.exports = function (upload, activeCronJobs, scheduleJob, runFmeScript) {
             }
             res.json({ message: 'Log files deleted.' });
         } catch (error) {
-            logEvent(`FEL vid rensning av loggar: ${error.message}`);
+            logEvent(`ERROR cleaning logs: ${error.message}`);
             res.status(500).json({ error: 'Could not clean logs.' });
         }
     });
