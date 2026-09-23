@@ -10,7 +10,7 @@ OpenFME-Scheduler is an open-source application designed to manage and schedule 
 
 - **Node.js** (version 16 or higher recommended)
 - **npm** (comes with Node.js)
-- **FME Desktop** installed and `fme.exe` available in your system PATH
+- **FME Form/Desktop** installed and available in your system PATH (`fme.exe` on Windows and `fme` on Linux/macOS)
 
 ## Features
 
@@ -44,25 +44,16 @@ OpenFME-Scheduler is an open-source application designed to manage and schedule 
 
 ## Installation
 
-### 1. Install Node.js on Windows
+### 1. Install Node.js
 
-Node.js is required to run this application. The installation process on Windows is simple and user-friendly:
-
-1. Go to the official Node.js website: [https://nodejs.org/](https://nodejs.org/)
-2. Download the recommended installer for Windows (LTS version).
-3. Run the installer and follow the steps in the setup wizard. For most users, the default options are fine.
-4. When finished, Node.js and npm (Node.js package manager) will be ready to use.
-
-To verify the installation, open a terminal (PowerShell or CMD) and run:
+Install Node.js 16 or later using the package manager or installer for your operating system. Verify the installation:
 
 ```sh
 node -v
 npm -v
 ```
 
-You should see the version numbers for Node.js and npm.
-
-For more details, see the official guide: [Node.js Windows Installation Guide](https://nodejs.org/en/download/package-manager/#windows)
+See [nodejs.org](https://nodejs.org/) for operating-system-specific installation instructions.
 
 ---
 
@@ -82,7 +73,7 @@ npm install
 ### 4. Start the application
 
 ```bash
-node server.js
+npm start
 ```
 
 ### 5. Open your browser and go to:
@@ -93,46 +84,46 @@ http://localhost:3100
 
 ---
 
-## Running as a Windows Service
+## Running as a Service
 
-To install the application as a Windows service:
-
-```sh
-node service.js
-```
-
-To uninstall the Windows service:
+The service commands select the native service manager for the current platform:
 
 ```sh
-node uninstall.js
+npm run service:install
 ```
 
-## Configuring the OpenFME-Scheduler as a Windows Service
+To uninstall the service:
 
-When installing the OpenFME-Scheduler as a Windows Service, it is important to configure the service to run under an appropriate user account. This ensures that the service has the necessary permissions to execute FME workspaces and access required resources.
+```sh
+npm run service:uninstall
+```
 
-### Steps to Configure the Service
-1. **Install the Service**:
-   - Run the `service.js` script to install the service:
-     ```bash
-     node service.js
-     ```
+### Windows
 
-2. **Set the Service to Use a Specific User Account**:
-   - Open the Windows Services Manager (`services.msc`).
-   - Locate the `OpenFME-Scheduler` service.
-   - Right-click the service and select **Properties**.
-   - Go to the **Log On** tab.
-   - Select **This account** and provide the credentials of a user account with administrative privileges.
+Windows uses `node-windows`. To install under a specific account, pass its credentials directly:
 
-3. **Restart the Service**:
-   - After setting the account, restart the service to apply the changes.
+```sh
+node service.js --username=DOMAIN\\username --password=your-password
+```
 
-### Notes for Windows Server Installations
-- On Windows Server, it is recommended to use a dedicated service account with the necessary permissions to:
-  - Execute `fme.exe`.
-  - Access the FME workspaces and any external resources (e.g., databases, files).
-- Ensure the service account has a strong password and follows your organization's security policies.
+### Linux
+
+Linux uses a per-user `systemd` unit at `~/.config/systemd/user/openfme-scheduler.service`. It runs with the same account that executes the install command and reads the project's `.env` file. To keep the service running after the user logs out, enable lingering once as an administrator:
+
+```sh
+loginctl enable-linger "$USER"
+```
+
+Inspect the service with:
+
+```sh
+systemctl --user status openfme-scheduler
+journalctl --user -u openfme-scheduler
+```
+
+### macOS
+
+macOS uses a per-user `launchd` agent at `~/Library/LaunchAgents/se.mundogis.openfme-scheduler.plist`. It starts when that user logs in. Service output is written to `logs/service.log` and `logs/service-error.log`.
 
 By following these steps, you can ensure that the OpenFME-Scheduler runs reliably in your environment.
 
@@ -146,13 +137,21 @@ Before installing the OpenFME-Scheduler, you must configure the `.env` file to e
    - Locate the `.env` file in the root of the project.
    - Open it in a text editor of your choice.
 
-2. **Update the Paths**:
+2. **Update the Paths**. Use paths for the host operating system:
    - Ensure the paths to `FME_EXECUTABLE_PATH`, `FME_SCRIPTS_PATH`, and `JOBS_FILE_PATH` are correct for your system. For example:
-     ```env
+     ```dotenv
+     # Windows
      FME_EXECUTABLE_PATH=C:\Program Files\FME\fme.exe
      FME_SCRIPTS_PATH=C:\OpenFME-Scheduler\fme_scripts
      JOBS_FILE_PATH=C:\OpenFME-Scheduler\data\jobs.json
+
+     # Linux or macOS
+     # FME_EXECUTABLE_PATH=/opt/fme/fme
+     # FME_SCRIPTS_PATH=/opt/openfme-scheduler/fme_scripts
+     # JOBS_FILE_PATH=/opt/openfme-scheduler/data/jobs.json
      ```
+
+   `FME_EXECUTABLE_PATH` is optional when `fme.exe` (Windows) or `fme` (Linux/macOS) is already in `PATH`.
 
 3. **Save the File**:
    - After making the changes, save the file.
@@ -160,7 +159,7 @@ Before installing the OpenFME-Scheduler, you must configure the `.env` file to e
 4. **Proceed with Installation**:
    - Once the `.env` file is configured, you can proceed to install the service by running:
      ```bash
-     node service.js
+     npm run service:install
      ```
 
 By ensuring the `.env` file is properly configured, you can avoid issues related to incorrect paths or missing configurations.
@@ -184,8 +183,25 @@ By ensuring the `.env` file is properly configured, you can avoid issues related
 
 ## Notes
 
-- Make sure `fme.exe` is available in your system PATH or update the path in `server.js`.
-- The application is designed for Windows environments.
+- Make sure the FME command is available in your system `PATH`, or set `FME_EXECUTABLE_PATH` in `.env`.
+- The application supports Windows, Linux, and macOS. FME workspace compatibility and licensing remain dependent on the FME distribution installed on that host.
+
+---
+
+## Support and Issue Reporting
+
+If you need assistance with installation, service setup, environment configuration, or troubleshooting on Windows, Linux, or macOS, please contact the support team at support@mundogis.se.
+
+We welcome bug reports, feature requests, and deployment feedback. When reporting an issue, please include:
+
+- Operating system and version
+- Node.js and npm version
+- FME installation details and version
+- Relevant environment variables or `.env` configuration
+- Steps to reproduce the problem
+- Any relevant log output or error messages
+
+This helps us diagnose and resolve issues more quickly and reliably.
 
 ---
 
@@ -198,7 +214,10 @@ This project is licensed under the Mozilla Public License, v. 2.0. See the [LICE
 ## Contact
 
 Developed by MundoGIS for the OpenFME-Scheduler project.
-For inquiries, contact: abel.gonzalez@mundogis.se
-Please contact MundoGIS (abel.gonzalez@mundogis.se) if you need any assistance with the installation or if you have suggestions on how to improve our software.
+
+For installation support, technical questions, or feedback, please contact the project support team at support@mundogis.se.
+
+We are happy to assist with installation guidance and to review bug reports, improvement suggestions, and deployment issues.
+
 Best regards,
-Abel Gonzalez
+OpenFME-Scheduler Support

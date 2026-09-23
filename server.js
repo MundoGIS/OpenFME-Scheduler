@@ -25,7 +25,8 @@ const app = express();
 const PORT = process.env.PORT || 3100;
 
 // Reemplazar rutas y credenciales con variables de entorno
-const fmeExecutable = process.env.FME_EXECUTABLE_PATH || 'fme.exe';
+const defaultFmeExecutable = process.platform === 'win32' ? 'fme.exe' : 'fme';
+const fmeExecutable = process.env.FME_EXECUTABLE_PATH || defaultFmeExecutable;
 const fmeScriptsPath = process.env.FME_SCRIPTS_PATH || path.join(__dirname, 'fme_scripts');
 const jobsFilePath = process.env.JOBS_FILE_PATH || path.join(__dirname, 'data', 'jobs.json');
 const runningFilePath = process.env.RUNNING_FILE_PATH || path.join(__dirname, 'data', 'running.json');

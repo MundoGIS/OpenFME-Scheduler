@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "service:install": "node service.js",
+    "service:uninstall": "node uninstall.js",
+    "check": "node --check server.js && node --check service.js && node --check uninstall.js && node --check routes/scheduler.js && node --check utils/service-manager.js",
+    "test": "npm run check"
   },
   "author": "MundoGIS",
   "license": "ISC",
